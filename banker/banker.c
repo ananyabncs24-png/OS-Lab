@@ -6,7 +6,7 @@ int main() {
     int p, r;
     int allocation[MAX][MAX], max[MAX][MAX], need[MAX][MAX];
     int available[MAX];
-    int finish[MAX] = {0}, safeSeq[MAX];
+    int finish[MAX] = {0}, safeSeq[MAX]; //Initialize ALL elements of the array to 0
 
     printf("Enter number of processes: ");
     scanf("%d", &p);
