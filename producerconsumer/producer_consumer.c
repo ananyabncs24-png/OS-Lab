@@ -101,10 +101,10 @@ void* consumer(void* arg)
 /* Initialize Semaphores and Mutex */
 void initialize()
 {
-    sem_init(&empty, 0, BUFFER_SIZE);
+    sem_init(&empty, 0, BUFFER_SIZE);  //(address of sema, scope ,initial value of sema)scope=0(shared by threads of same process ) 1:diff process
     sem_init(&full, 0, 0);
 
-    pthread_mutex_init(&mutex, NULL);
+    pthread_mutex_init(&mutex, NULL);  
 }
 
 /* Destroy Resources */
@@ -129,11 +129,11 @@ int main()
     initialize();
 
     /* Create Threads */
-    pthread_create(&producerThread, NULL, producer, NULL);
+    pthread_create(&producerThread, NULL, producer, NULL); //thread id, thread attributes here default, function name that it will execute, arg sent to that function)
     pthread_create(&consumerThread, NULL, consumer, NULL);
 
     /* Wait for Threads to Finish */
-    pthread_join(producerThread, NULL);
+    pthread_join(producerThread, NULL);// which thread to wait for, return value from thread 
     pthread_join(consumerThread, NULL);
 
     /* Cleanup */
