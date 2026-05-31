@@ -78,11 +78,12 @@ void simulate_rms(Task tasks[], int n, int hyperperiod) {
         tasks[i].remaining_time = 0; 
         tasks[i].next_deadline = 0;
     }
+    //no jobs arrived yet
 
-    for (int t = 0; t < hyperperiod; t++) {
+    for (int t = 0; t < hyperperiod; t++) {    //each time tick 0,1,....
         // 1. Arrive new jobs at their periods
         for (int i = 0; i < n; i++) {
-            if (t % tasks[i].period == 0) {
+            if (t % tasks[i].period == 0) {    //only becomes 0 at 0,50,100 if the period is 50, basically only 0 at multiples of period
                 // If a task hasn't finished its previous instance, we have a deadline miss
                 if (tasks[i].remaining_time > 0) {
                     printf("[Time %d] ALERT: Task %d missed its deadline!\n", t, tasks[i].id);
