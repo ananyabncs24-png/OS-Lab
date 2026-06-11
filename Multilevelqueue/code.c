@@ -1,102 +1,129 @@
 #include <stdio.h>
+#include <stdbool.h>
 
-// Structure for a process
 struct Process {
     int id;
+    int arrival_time;
     int burst_time;
-    int waiting_time;
+    int queue_type; // 1 = System Process, 2 = User Process
+    int completion_time;
     int turnaround_time;
+    int waiting_time;
+    bool is_completed;
 };
 
-// FCFS Scheduling Function
-void fcfs(struct Process p[], int n) {
-    int i;
-
-    // First process has 0 waiting time
-    p[0].waiting_time = 0;
-
-    // Calculate waiting time
-    for (i = 1; i < n; i++) {
-        p[i].waiting_time = p[i - 1].waiting_time + p[i - 1].burst_time;
+// Function to sort processes by arrival time initially
+void sortByArrivalTime(struct Process p[], int n) {
+    for (int i = 0; i < n - 1; i++) {
+        for (int j = 0; j < n - i - 1; j++) {
+            if (p[j].arrival_time > p[j + 1].arrival_time) {
+                struct Process temp = p[j];
+                p[j] = p[j + 1];
+                p[j + 1] = temp;
+            }
+        }
     }
-
-    // Calculate turnaround time
-    for (i = 0; i < n; i++) {
-        p[i].turnaround_time = p[i].waiting_time + p[i].burst_time;
-    }
-}
-
-// Display Function
-void display(struct Process p[], int n, char name[]) {
-    int i;
-    float total_wt = 0, total_tat = 0;
-
-    printf("\n%s Queue:\n", name);
-    printf("Process\tBurst Time\tWaiting Time\tTurnaround Time\n");
-
-    for (i = 0; i < n; i++) {
-        printf("P%d\t%d\t\t%d\t\t%d\n",
-               p[i].id,
-               p[i].burst_time,
-               p[i].waiting_time,
-               p[i].turnaround_time);
-
-        total_wt += p[i].waiting_time;
-        total_tat += p[i].turnaround_time;
-    }
-
-    printf("Average Waiting Time = %.2f\n", total_wt / n);
-    printf("Average Turnaround Time = %.2f\n", total_tat / n);
 }
 
 int main() {
-    int n_sys, n_user, i;
+    int n;
+    printf("Enter the total number of processes: ");
+    scanf("%d", &n);
 
-    // Input system processes
-    printf("Enter number of System Processes: ");
-    scanf("%d", &n_sys);
-
-    struct Process sys[n_sys];
-
-    for (i = 0; i < n_sys; i++) {
-        sys[i].id = i + 1;
-        printf("Enter burst time for System Process P%d: ", sys[i].id);
-        scanf("%d", &sys[i].burst_time);
+    struct Process p[n];
+    for (int i = 0; i < n; i++) {
+        p[i].id = i + 1;
+        printf("\nFor Process P%d:\n", p[i].id);
+        printf("Enter Arrival Time: ");
+        scanf("%d", &p[i].arrival_time);
+        printf("Enter Burst Time: ");
+        scanf("%d", &p[i].burst_time);
+        printf("Enter Queue Type (1 for System Process, 2 for User Process): ");
+        scanf("%d", &p[i].queue_type);
+        p[i].is_completed = false;
     }
 
-    // Input user processes
-    printf("\nEnter number of User Processes: ");
-    scanf("%d", &n_user);
+    // Sort by arrival time to properly mimic timeline
+    sortByArrivalTime(p, n);
 
-    struct Process user[n_user];
+    int current_time = 0;
+    int completed = 0;
+    float total_tat = 0, total_wt = 0;
 
-    for (i = 0; i < n_user; i++) {
-        user[i].id = i + 1;
-        printf("Enter burst time for User Process P%d: ", user[i].id);
-        scanf("%d", &user[i].burst_time);
+    printf("\nGantt Chart Execution Sequence:\n");
+
+    while (completed < n) {
+        int chosen_index = -1;
+
+        // 1. Check for ready System Processes (Queue 1) first
+        for (int i = 0; i < n; i++) {
+            if (p[i].arrival_time <= current_time && !p[i].is_completed && p[i].queue_type == 1) {
+                chosen_index = i;
+                break; // Since sorted by arrival time, this is the FCFS choice
+            }
+        }
+
+        // 2. If no system processes are ready, look for ready User Processes (Queue 2)
+        if (chosen_index == -1) {
+            for (int i = 0; i < n; i++) {
+                if (p[i].arrival_time <= current_time && !p[i].is_completed && p[i].queue_type == 2) {
+                    chosen_index = i;
+                    break; // Since sorted by arrival time, this is the FCFS choice
+                }
+            }
+        }
+
+        // 3. CPU Idle State Handler
+        if (chosen_index == -1) {
+            // Find the minimum arrival time among uncompleted processes to jump to
+            int min_arrival = 1e9;
+            for (int i = 0; i < n; i++) {
+                if (!p[i].is_completed && p[i].arrival_time < min_arrival) {
+                    min_arrival = p[i].arrival_time;
+                }
+            }
+            printf("| IDLE (%d to %d) ", current_time, min_arrival);
+            current_time = min_arrival;
+            continue;
+        }
+
+        // 4. Process execution (FCFS processing means complete execution)
+        printf("| P%d (%d to ", p[chosen_index].id, current_time);
+        
+        current_time += p[chosen_index].burst_time;
+        p[chosen_index].completion_time = current_time;
+        p[chosen_index].is_completed = true;
+        completed++;
+
+        printf("%d) ", current_time);
+
+        // Calculate Turnaround and Waiting metrics
+        p[chosen_index].turnaround_time = p[chosen_index].completion_time - p[chosen_index].arrival_time;
+        p[chosen_index].waiting_time = p[chosen_index].turnaround_time - p[chosen_index].burst_time;
+
+        total_tat += p[chosen_index].turnaround_time;
+        total_wt += p[chosen_index].waiting_time;
     }
+    printf("|\n");
 
-    // Apply FCFS scheduling
-    fcfs(sys, n_sys);
-    fcfs(user, n_user);
-
-    // Adjust user waiting time (since system runs first)
-    int total_sys_time = 0;
-    for (i = 0; i < n_sys; i++) {
-        total_sys_time += sys[i].burst_time;
+    // Print Results Table
+    printf("\n========================================================================\n");
+    printf("Process\tType\t\tArrival\tBurst\tWaiting\tTurnaround\tCompletion\n");
+    printf("========================================================================\n");
+    for (int i = 0; i < n; i++) {
+        printf("P%d\t%s\t%d\t%d\t%d\t%d\t\t%d\n", 
+               p[i].id, 
+               (p[i].queue_type == 1) ? "System" : "User  ", 
+               p[i].arrival_time, 
+               p[i].burst_time, 
+               p[i].waiting_time, 
+               p[i].turnaround_time,
+               p[i].completion_time);
     }
+    printf("========================================================================\n");
 
-    for (i = 0; i < n_user; i++) {
-        user[i].waiting_time += total_sys_time;
-        user[i].turnaround_time = user[i].waiting_time + user[i].burst_time;
-    }
-
-    // Output results
-    printf("\n===== Multi-Level Queue Scheduling =====\n");
-
-    display(sys, n_sys, "System (Higher Priority)");
-    display(user, n_user, "User (Lower Priority)");
+    printf("\nAverage Waiting Time: %.2f\n", total_wt / n);
+    printf("Average Turnaround Time: %.2f\n", total_tat / n);
 
     return 0;
 }
-
